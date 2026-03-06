@@ -92,17 +92,33 @@ test.describe('Blog post page', () => {
     await expect(page.locator('article, .prose').first()).toBeVisible({ timeout: 5000 })
   })
 
-  test('TOC links scroll to heading without navigating away', async ({ page }) => {
+  test('TOC links scroll to correct heading without navigating away', async ({ page }) => {
     await page.goto('/#/blog/test-post')
-    // Wait for markdown to render
     await expect(page.locator('h1').first()).toBeVisible({ timeout: 10000 })
 
-    const tocButton = page.locator('aside button').first()
-    const count = await tocButton.count()
-    if (count > 0) {
-      const urlBefore = page.url()
-      await tocButton.click()
-      await page.waitForTimeout(500)
+    // All TOC buttons should exist
+    const tocButtons = page.locator('aside button')
+    await expect(tocButtons.first()).toBeVisible({ timeout: 5000 })
+    const count = await tocButtons.count()
+    expect(count).toBeGreaterThan(0)
+
+    const urlBefore = page.url()
+
+    // Click first TOC item — should NOT navigate away
+    await tocButtons.first().click()
+    await page.waitForTimeout(600)
+    expect(page.url()).toBe(urlBefore)
+
+    // The target heading should exist in the DOM with a matching id
+    const firstLabel = await tocButtons.first().textContent()
+    const expectedId = firstLabel.trim().toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim()
+    const heading = page.locator(`[id="${expectedId}"]`)
+    await expect(heading).toBeAttached()
+
+    // Click second TOC item too
+    if (count > 1) {
+      await tocButtons.nth(1).click()
+      await page.waitForTimeout(600)
       expect(page.url()).toBe(urlBefore)
     }
   })

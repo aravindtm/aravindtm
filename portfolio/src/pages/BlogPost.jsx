@@ -12,14 +12,28 @@ const GISCUS_REPO_ID = 'YOUR-REPO-ID'
 const GISCUS_CATEGORY = 'Announcements'
 const GISCUS_CATEGORY_ID = 'YOUR-CATEGORY-ID'
 
+function slugify(text) {
+  return text.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim()
+}
+
+// Recursively extract plain text from React children (handles nested elements)
+function childrenToText(children) {
+  if (children == null) return ''
+  if (typeof children === 'string') return children
+  if (typeof children === 'number') return String(children)
+  if (Array.isArray(children)) return children.map(childrenToText).join('')
+  if (children?.props?.children) return childrenToText(children.props.children)
+  return ''
+}
+
 function extractHeadings(markdown) {
   const lines = markdown.split('\n')
   return lines
     .filter(l => /^#{2,3}\s/.test(l))
     .map(l => {
       const level = l.match(/^(#{2,3})/)[1].length
-      const text = l.replace(/^#{2,3}\s+/, '')
-      const id = text.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-')
+      const text = l.replace(/^#{2,3}\s+/, '').replace(/\*\*|__|\*|_|`/g, '')
+      const id = slugify(text)
       return { level, text, id }
     })
 }
@@ -112,11 +126,11 @@ export default function BlogPost() {
       return <img src={resolveImageUrl(slug, src)} alt={alt} {...props} className="rounded-xl max-w-full my-6 shadow-lg" />
     },
     h2({ children, ...props }) {
-      const id = String(children).toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-')
+      const id = slugify(childrenToText(children))
       return <h2 id={id} {...props}>{children}</h2>
     },
     h3({ children, ...props }) {
-      const id = String(children).toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-')
+      const id = slugify(childrenToText(children))
       return <h3 id={id} {...props}>{children}</h3>
     },
     pre({ children, ...props }) {
