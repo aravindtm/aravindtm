@@ -25,6 +25,16 @@ export default function Blog() {
     })
   )]
 
+  const tagCounts = allTags.reduce((acc, tag) => {
+    acc[tag] = posts.filter(p => {
+      const tags = typeof p.tags === 'string'
+        ? p.tags.split(',').map(t => t.trim())
+        : (Array.isArray(p.tags) ? p.tags : [])
+      return tags.includes(tag)
+    }).length
+    return acc
+  }, {})
+
   const filtered = selectedTag
     ? posts.filter(p => {
         const tags = typeof p.tags === 'string'
@@ -34,41 +44,52 @@ export default function Blog() {
       })
     : posts
 
-  return (
-    <div className="min-h-screen pt-24 pb-16 px-6">
-      <div className="max-w-6xl mx-auto">
-        <AnimatedSection>
-          <p className="text-sm font-mono text-cyan-500 mb-2 tracking-wider uppercase">Blog</p>
-          <h2 className="text-4xl font-bold mb-4">Writing</h2>
-          <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-xl">
-            Thoughts on DevOps, cloud infrastructure, and engineering.
-          </p>
-        </AnimatedSection>
+  const [featured, ...rest] = filtered
 
+  return (
+    <div className="min-h-screen pb-16">
+      {/* Hero header */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 pt-32 pb-20 px-6">
+        <div className="absolute inset-0 opacity-20" style={{
+          backgroundImage: 'radial-gradient(circle at 30% 50%, #06b6d4 0%, transparent 50%), radial-gradient(circle at 70% 20%, #3b82f6 0%, transparent 40%)'
+        }} />
+        <div className="relative max-w-6xl mx-auto">
+          <AnimatedSection>
+            <p className="text-sm font-mono text-cyan-400 mb-3 tracking-widest uppercase">Blog</p>
+            <h2 className="text-5xl md:text-6xl font-bold text-white mb-4">Writing</h2>
+            <p className="text-gray-400 text-lg max-w-xl">
+              Thoughts on DevOps, cloud infrastructure, and engineering.
+            </p>
+          </AnimatedSection>
+        </div>
+      </div>
+
+      <div className="max-w-6xl mx-auto px-6 pt-10">
+        {/* Tag filters */}
         {allTags.length > 0 && (
           <AnimatedSection>
-            <div className="flex flex-wrap gap-2 mb-10">
+            <div className="flex flex-wrap gap-2 mb-12">
               <button
                 onClick={() => setSelectedTag(null)}
-                className={`text-sm px-3 py-1.5 rounded-full border transition-colors ${
+                className={`text-sm px-4 py-1.5 rounded-full border transition-all ${
                   selectedTag === null
-                    ? 'border-cyan-500 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400'
-                    : 'border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-400 dark:hover:border-gray-600'
+                    ? 'border-cyan-500 bg-cyan-500/10 text-cyan-500 shadow-[0_0_12px_rgba(6,182,212,0.2)]'
+                    : 'border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-cyan-500/50'
                 }`}
               >
-                All
+                All <span className="ml-1 text-xs opacity-60">{posts.length}</span>
               </button>
               {allTags.map(tag => (
                 <button
                   key={tag}
                   onClick={() => setSelectedTag(tag === selectedTag ? null : tag)}
-                  className={`text-sm px-3 py-1.5 rounded-full border transition-colors ${
+                  className={`text-sm px-4 py-1.5 rounded-full border transition-all ${
                     selectedTag === tag
-                      ? 'border-cyan-500 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400'
-                      : 'border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-400 dark:hover:border-gray-600'
+                      ? 'border-cyan-500 bg-cyan-500/10 text-cyan-500 shadow-[0_0_12px_rgba(6,182,212,0.2)]'
+                      : 'border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-cyan-500/50'
                   }`}
                 >
-                  {tag}
+                  {tag} <span className="ml-1 text-xs opacity-60">{tagCounts[tag]}</span>
                 </button>
               ))}
             </div>
@@ -79,7 +100,7 @@ export default function Blog() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(3)].map((_, i) => (
               <div key={i} className="card animate-pulse">
-                <div className="h-40 bg-gray-200 dark:bg-gray-800 rounded-lg mb-4" />
+                <div className="h-48 bg-gray-200 dark:bg-gray-800 rounded-xl mb-4" />
                 <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-1/2 mb-3" />
                 <div className="h-5 bg-gray-200 dark:bg-gray-800 rounded w-3/4 mb-2" />
                 <div className="h-4 bg-gray-100 dark:bg-gray-800/50 rounded w-full mb-1" />
@@ -90,16 +111,32 @@ export default function Blog() {
         ) : filtered.length === 0 ? (
           <p className="text-gray-500">No posts found.</p>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filtered.map((post, i) => (
-              <AnimatedSection key={post.slug} delay={i * 0.08}>
+          <>
+            {/* Featured first post */}
+            {featured && (
+              <AnimatedSection className="mb-10">
                 <BlogCard
-                  {...post}
-                  readingTime={estimateReadingTime(post.excerpt || '')}
+                  {...featured}
+                  readingTime={estimateReadingTime(featured.excerpt || '')}
+                  featured
                 />
               </AnimatedSection>
-            ))}
-          </div>
+            )}
+
+            {/* Rest in grid */}
+            {rest.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {rest.map((post, i) => (
+                  <AnimatedSection key={post.slug} delay={i * 0.08}>
+                    <BlogCard
+                      {...post}
+                      readingTime={estimateReadingTime(post.excerpt || '')}
+                    />
+                  </AnimatedSection>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
